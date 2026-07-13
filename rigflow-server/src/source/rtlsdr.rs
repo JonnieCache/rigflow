@@ -127,6 +127,18 @@ impl RtlSdrSource {
     }
 }
 
+impl Drop for RtlSdrSource {
+    /// `rtl_sdr_rs::RtlSdr` has no `Drop` impl of its own: dropping it closes the
+    /// USB handle but leaves the demodulator, ADC and tuner PLL powered up and
+    /// running hot.  `close()` puts the tuner in standby and powers off the
+    /// demod/ADC.
+    fn drop(&mut self) {
+        if let Err(e) = self.dev.close() {
+            log::warn!("failed to power down RTL-SDR on close: {e}");
+        }
+    }
+}
+
 /// Minimal per-device info from RTL-SDR enumeration, used by radio discovery.
 pub struct RtlDeviceInfo {
     /// Enumeration index — the value to pass to [`RtlSdrSource::open`] /
