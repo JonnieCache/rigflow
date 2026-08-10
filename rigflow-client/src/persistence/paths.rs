@@ -10,7 +10,7 @@ use crate::persistence::error::PersistenceError;
 /// Priority:
 /// 1. explicit CLI override
 /// 2. RIGFLOW_CONFIG_DIR
-/// 3. the legacy hardcoded config dir for backward compatibility
+/// 3. the legacy hardcoded config dir for backward compatibility (macos only)
 /// 4. the platform config directory reported by `dirs`
 pub fn resolve_config_dir(cli_override: Option<&Path>) -> Result<PathBuf, PersistenceError> {
     if let Some(path) = cli_override {
@@ -30,6 +30,7 @@ pub fn resolve_config_dir(cli_override: Option<&Path>) -> Result<PathBuf, Persis
         .ok_or(PersistenceError::NoConfigDirectory)
 }
 
+#[cfg(target_os = "macos")]
 fn legacy_config_dir() -> Option<PathBuf> {
     let home = env::var_os("HOME")?;
     let config_path = PathBuf::from(home).join(".config").join("rigflow");
@@ -39,6 +40,11 @@ fn legacy_config_dir() -> Option<PathBuf> {
     } else {
         None
     }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn legacy_config_dir() -> Option<PathBuf> {
+    None
 }
 
 pub fn app_state_path(config_dir: &Path) -> PathBuf {
